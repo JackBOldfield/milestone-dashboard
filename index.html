@@ -8,8 +8,8 @@
 <style>
   /* ── CONFIG — edit these two values ── */
   :root {
-    --dashboard-password: "oldfield2024";   /* change this */
-    --asana-token: "YOUR_ASANA_PAT_HERE";   /* paste your Asana Personal Access Token */
+    --dashboard-password: "oldfield2026";   /* change this */
+    --asana-token: "2/1212395112981781/1214634760034440:0e89b0a4be5bde3460ccf61916c8c786";   /* paste your Asana Personal Access Token */
     --navy: #0F2044;
     --navy-mid: #1A3360;
     --gold: #C9A84C;
@@ -360,8 +360,8 @@
 
 <script>
 // ── CONFIG (also in :root above — edit both) ──
-const DASHBOARD_PASSWORD = "oldfield2024"; // keep in sync with CSS var
-const ASANA_TOKEN = "YOUR_ASANA_PAT_HERE";  // paste your Asana Personal Access Token here
+const DASHBOARD_PASSWORD = "oldfield2026"; // keep in sync with CSS var
+const ASANA_TOKEN = "2/1212395112981781/1214634760034440:0e89b0a4be5bde3460ccf61916c8c786";  // paste your Asana Personal Access Token here
 
 // ── STARTUP CHECK ──
 window.addEventListener('DOMContentLoaded', () => {
@@ -425,7 +425,7 @@ async function loadMilestones() {
   allMilestones = [];
 
   diag('▶ loadMilestones() started');
-  diag('Token set: ' + (ASANA_TOKEN !== 'YOUR_ASANA_PAT_HERE' ? '✅ yes' : '❌ NO — still placeholder'));
+  diag('Token set: ' + (ASANA_TOKEN !== '2/1212395112981781/1214634760034440:0e89b0a4be5bde3460ccf61916c8c786' ? '✅ yes' : '❌ NO — still placeholder'));
   diag('Attempting: GET /users/me');
 
   try {
@@ -465,8 +465,8 @@ async function loadMilestones() {
   } catch (err) {
     diag('❌ Error: ' + err.message);
     document.getElementById('table-wrap').innerHTML = '';
-    if (ASANA_TOKEN === 'YOUR_ASANA_PAT_HERE') {
-      showError('<strong>Setup required:</strong> Open this file in a text editor and replace <code>YOUR_ASANA_PAT_HERE</code> with your Asana Personal Access Token. You can generate one at <a href="https://app.asana.com/0/my-apps" target="_blank" style="color:inherit">app.asana.com/0/my-apps</a>.');
+    if (ASANA_TOKEN === '2/1212395112981781/1214634760034440:0e89b0a4be5bde3460ccf61916c8c786') {
+      showError('<strong>Setup required:</strong> Open this file in a text editor and replace <code>2/1212395112981781/1214634760034440:0e89b0a4be5bde3460ccf61916c8c786</code> with your Asana Personal Access Token. You can generate one at <a href="https://app.asana.com/0/my-apps" target="_blank" style="color:inherit">app.asana.com/0/my-apps</a>.');
     } else {
       showError(`<strong>Could not load milestones.</strong> ${err.message}. Check your Asana token is correct and has access to your workspace.`);
     }
