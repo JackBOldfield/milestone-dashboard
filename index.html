@@ -4,13 +4,12 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Oldfield Advisory — Milestone Dashboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
 <style>
   /* ── CONFIG — edit these two values ── */
   :root {
-    --dashboard-password: "oldfield2026";   /* change this */
-    --asana-token: "2/1212395112981781/1214634760034440:0e89b0a4be5bde3460ccf61916c8c786";   /* paste your Asana Personal Access Token */
+    --dashboard-password: "oldfield2024";   /* change this */
+    --asana-token: "YOUR_ASANA_PAT_HERE";   /* paste your Asana Personal Access Token */
     --navy: #0F2044;
     --navy-mid: #1A3360;
     --gold: #C9A84C;
@@ -32,7 +31,7 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    font-family: 'DM Sans', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     background: var(--cream);
     color: var(--text);
     min-height: 100vh;
@@ -69,7 +68,7 @@
     border: 1px solid rgba(255,255,255,0.15);
     border-radius: var(--radius-sm);
     color: #fff;
-    font-family: 'DM Mono', monospace;
+    font-family: 'Courier New', monospace;
     font-size: 14px;
     outline: none;
     letter-spacing: 0.08em;
@@ -80,7 +79,7 @@
     background: var(--gold);
     border: none; border-radius: var(--radius-sm);
     color: var(--navy);
-    font-family: 'DM Sans', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     font-size: 14px; font-weight: 600;
     cursor: pointer; transition: opacity 0.15s;
     letter-spacing: 0.01em;
@@ -104,7 +103,7 @@
   .header-title { color: #fff; font-size: 15px; font-weight: 600; letter-spacing: 0.01em; }
   .header-subtitle { color: rgba(255,255,255,0.45); font-size: 12px; margin-top: 1px; }
   .header-right { display: flex; align-items: center; gap: 12px; }
-  .last-updated { color: rgba(255,255,255,0.4); font-size: 11px; font-family: 'DM Mono', monospace; }
+  .last-updated { color: rgba(255,255,255,0.4); font-size: 11px; font-family: 'Courier New', monospace; }
   .refresh-btn {
     display: flex; align-items: center; gap: 6px;
     padding: 7px 14px;
@@ -154,13 +153,13 @@
   .search-input {
     width: 100%; padding: 9px 12px 9px 32px;
     background: #fff; border: 1px solid var(--border);
-    border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif;
+    border-radius: var(--radius-sm); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     font-size: 13px; color: var(--text); outline: none;
   }
   .search-input:focus { border-color: var(--navy-mid); }
   .ctrl-select {
     padding: 9px 12px; background: #fff; border: 1px solid var(--border);
-    border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif;
+    border-radius: var(--radius-sm); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     font-size: 13px; color: var(--text); outline: none; cursor: pointer;
   }
   .ctrl-select:focus { border-color: var(--navy-mid); }
@@ -226,8 +225,8 @@
   a.ms-name { color: var(--navy); }
 
   .ms-assignee { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ms-due { font-size: 12px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
-  .ms-days { font-size: 12px; font-weight: 600; text-align: right; font-family: 'DM Mono', monospace; }
+  .ms-due { font-size: 12px; color: var(--text-muted); font-family: 'Courier New', monospace; }
+  .ms-days { font-size: 12px; font-weight: 600; text-align: right; font-family: 'Courier New', monospace; }
   .ms-days.overdue { color: var(--red); }
   .ms-days.soon { color: var(--amber); }
 
@@ -283,6 +282,13 @@
   </div>
 </div>
 
+<!-- DIAGNOSTICS PANEL — visible even before login -->
+<div id="diag-box" style="display:none; position:fixed; bottom:16px; right:16px; max-width:480px; z-index:200; background:#0F2044; color:#fff; border-radius:10px; padding:16px 20px; font-size:12px; font-family:'Courier New',monospace; line-height:1.8; box-shadow:0 4px 24px rgba(0,0,0,0.3);">
+  <div style="font-weight:600; margin-bottom:8px; font-family:sans-serif; font-size:13px;">🔍 Diagnostics</div>
+  <div id="diag-content"></div>
+  <button onclick="document.getElementById('diag-box').style.display='none'" style="margin-top:10px; padding:4px 12px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:4px; color:#fff; cursor:pointer; font-size:11px;">Hide</button>
+</div>
+
 <!-- MAIN APP -->
 <div id="app">
   <header>
@@ -335,10 +341,14 @@
         <option value="atrisk">At risk only</option>
         <option value="all">All milestones</option>
       </select>
+      <select class="ctrl-select" id="filter-assignee" onchange="render()">
+        <option value="all">All assignees</option>
+      </select>
       <select class="ctrl-select" id="sort-by" onchange="render()">
         <option value="urgency">Most urgent first</option>
         <option value="due">Due date</option>
-        <option value="project">Project A–Z</option>
+        <option value="project">Project A&#8211;Z</option>
+        <option value="assignee">Assignee A&#8211;Z</option>
       </select>
     </div>
 
@@ -350,8 +360,15 @@
 
 <script>
 // ── CONFIG (also in :root above — edit both) ──
-const DASHBOARD_PASSWORD = "oldfield2026"; // keep in sync with CSS var
-const ASANA_TOKEN = "2/1212395112981781/1214634760034440:0e89b0a4be5bde3460ccf61916c8c786";  // paste your Asana Personal Access Token here
+const DASHBOARD_PASSWORD = "oldfield2024"; // keep in sync with CSS var
+const ASANA_TOKEN = "YOUR_ASANA_PAT_HERE";  // paste your Asana Personal Access Token here
+
+// ── STARTUP CHECK ──
+window.addEventListener('DOMContentLoaded', () => {
+  diag('✅ Page loaded — JS running');
+  diag('Browser: ' + navigator.userAgent.substring(0, 60));
+  diag('Password configured: ' + (DASHBOARD_PASSWORD ? '✅' : '❌'));
+});
 
 // ── PASSWORD ──
 document.getElementById('pw-input').addEventListener('keydown', e => {
@@ -369,6 +386,14 @@ function checkPassword() {
     document.getElementById('pw-input').value = '';
     document.getElementById('pw-input').focus();
   }
+}
+
+// ── DIAGNOSTICS ──
+function diag(msg) {
+  const box = document.getElementById('diag-box');
+  const content = document.getElementById('diag-content');
+  box.style.display = 'block';
+  content.innerHTML += msg + '<br>';
 }
 
 // ── DATA ──
@@ -399,11 +424,16 @@ async function loadMilestones() {
   document.getElementById('table-wrap').innerHTML = '<div class="state-box"><div class="spinner"></div>Fetching milestones…</div>';
   allMilestones = [];
 
+  diag('▶ loadMilestones() started');
+  diag('Token set: ' + (ASANA_TOKEN !== 'YOUR_ASANA_PAT_HERE' ? '✅ yes' : '❌ NO — still placeholder'));
+  diag('Attempting: GET /users/me');
+
   try {
-    // 1. Get workspace
     const me = await asanaGet('/users/me?opt_fields=workspaces');
+    diag('✅ /users/me OK — user: ' + (me.data?.name || 'unknown'));
     const wsGid = me.data.workspaces?.[0]?.gid;
     if (!wsGid) throw new Error('No Asana workspace found for this token.');
+    diag('✅ Workspace GID: ' + wsGid);
 
     // 2. Search for incomplete milestones across all projects
     const params = new URLSearchParams({
@@ -416,6 +446,7 @@ async function loadMilestones() {
     });
 
     const results = await asanaGet(`/workspaces/${wsGid}/tasks/search?${params}`);
+    diag('✅ Milestones fetched: ' + (results.data?.length || 0) + ' found');
     allMilestones = (results.data || []).map(t => ({
       name: t.name,
       due_on: t.due_on || null,
@@ -425,11 +456,14 @@ async function loadMilestones() {
       permalink: t.permalink_url || null
     }));
 
+    populateAssigneeDropdown();
+
     document.getElementById('last-updated').textContent =
       'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
     render();
   } catch (err) {
+    diag('❌ Error: ' + err.message);
     document.getElementById('table-wrap').innerHTML = '';
     if (ASANA_TOKEN === 'YOUR_ASANA_PAT_HERE') {
       showError('<strong>Setup required:</strong> Open this file in a text editor and replace <code>YOUR_ASANA_PAT_HERE</code> with your Asana Personal Access Token. You can generate one at <a href="https://app.asana.com/0/my-apps" target="_blank" style="color:inherit">app.asana.com/0/my-apps</a>.');
@@ -446,7 +480,7 @@ function classify(due_on) {
   const due = new Date(due_on);
   const diff = Math.round((due - today) / 86400000);
   if (diff < 0) return { status: 'overdue', days: diff };
-  if (diff <= 14) return { status: 'atrisk', days: diff };
+  if (diff <= 30) return { status: 'atrisk', days: diff };
   return { status: 'ok', days: diff };
 }
 
@@ -459,9 +493,24 @@ function updateMetrics(classified, display) {
   document.getElementById('m-ok').textContent = classified.filter(m => m.status === 'ok').length;
 }
 
+function populateAssigneeDropdown() {
+  const select = document.getElementById('filter-assignee');
+  const current = select.value;
+  const names = [...new Set(allMilestones.map(m => m.assignee).filter(Boolean))].sort();
+  select.innerHTML = '<option value="all">All assignees</option>';
+  names.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    if (name === current) opt.selected = true;
+    select.appendChild(opt);
+  });
+}
+
 function render() {
   const search = document.getElementById('search').value.toLowerCase();
   const filterStatus = document.getElementById('filter-status').value;
+  const filterAssignee = document.getElementById('filter-assignee').value;
   const sortBy = document.getElementById('sort-by').value;
 
   const classified = allMilestones.map(m => ({ ...m, ...classify(m.due_on) }));
@@ -477,7 +526,8 @@ function render() {
       filterStatus === 'issues' ? (m.status === 'overdue' || m.status === 'atrisk') :
       filterStatus === 'overdue' ? m.status === 'overdue' :
       filterStatus === 'atrisk' ? m.status === 'atrisk' : true;
-    return matchSearch && matchStatus;
+    const matchAssignee = filterAssignee === 'all' || m.assignee === filterAssignee;
+    return matchSearch && matchStatus && matchAssignee;
   });
 
   if (sortBy === 'urgency') {
@@ -487,6 +537,8 @@ function render() {
       : (a.days ?? 999) - (b.days ?? 999));
   } else if (sortBy === 'due') {
     filtered.sort((a,b) => !a.due_on ? 1 : !b.due_on ? -1 : new Date(a.due_on) - new Date(b.due_on));
+  } else if (sortBy === 'assignee') {
+    filtered.sort((a,b) => (a.assignee || 'ZZZ').localeCompare(b.assignee || 'ZZZ'));
   } else {
     filtered.sort((a,b) => a.project.localeCompare(b.project));
   }
@@ -532,13 +584,16 @@ function render() {
     items.forEach(m => {
       const dotClass = m.status === 'overdue' ? 'dot-red' : 'dot-amber';
       const daysClass = m.status === 'overdue' ? 'overdue' : 'soon';
-      const daysLabel = m.days === null ? '—'
+      const daysLabel = m.days === null ? '&#8212;'
         : m.days < 0 ? `${Math.abs(m.days)}d late`
         : m.days === 0 ? 'Today'
         : `${m.days}d`;
       const dueLabel = m.due_on
         ? new Date(m.due_on).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })
-        : '—';
+        : '&#8212;';
+      const assigneeHtml = filterAssignee !== 'all'
+        ? `<span class="ms-assignee" style="color:var(--navy); font-weight:500;">${esc(m.assignee || '&#8212;')}</span>`
+        : `<span class="ms-assignee">${esc(m.assignee || '&#8212;')}</span>`;
       const nameEl = m.permalink
         ? `<a href="${m.permalink}" target="_blank" class="ms-name" title="${esc(m.name)}">${esc(m.name)}</a>`
         : `<span class="ms-name" title="${esc(m.name)}">${esc(m.name)}</span>`;
@@ -546,7 +601,7 @@ function render() {
       html += `<div class="ms-row">
         <div><span class="status-dot ${dotClass}"></span></div>
         <div class="ms-name-cell">${nameEl}</div>
-        <div class="ms-assignee">${esc(m.assignee || '—')}</div>
+        ${assigneeHtml}
         <div class="ms-due">${dueLabel}</div>
         <div class="ms-days ${daysClass}">${daysLabel}</div>
       </div>`;
