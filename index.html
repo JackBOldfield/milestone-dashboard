@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Oldfield Advisory — Milestone Dashboard</title>
+
+<style>
+  /* ── CONFIG — edit these two values ── */
+  :root {
+    --dashboard-password: "oldfield2026";   /* change this */
+    --asana-token: "2/1212395112981781/1214634760034440:0e89b0a4be5bde3460ccf61916c8c786";   /* paste your Asana Personal Access Token */
+    --navy: #0F2044;
+    --navy-mid: #1A3360;
+    --gold: #C9A84C;
+    --gold-light: #F0D98A;
+    --cream: #F9F6EF;
+    --text: #1A1A2E;
+    --text-muted: #5A6070;
+    --border: rgba(15,32,68,0.12);
+    --red: #C0392B;
+    --red-bg: #FDF0EF;
+    --amber: #B7770D;
+    --amber-bg: #FEF8EC;
+    --green: #1D7A4A;
+    --green-bg: #EEF7F2;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── PASSWORD SCREEN ── */
+  #lock-screen {
+    position: fixed; inset: 0; z-index: 100;
+    background: var(--navy);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 24px;
+  }
+  .lock-logo {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .lock-logo-bar {
+    width: 4px; height: 36px; background: var(--gold); border-radius: 2px;
+  }
+  .lock-logo-text { color: #fff; font-size: 18px; font-weight: 600; letter-spacing: 0.02em; }
+  .lock-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius);
+    padding: 32px 36px;
+    width: 340px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .lock-label { color: rgba(255,255,255,0.55); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .lock-input {
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: var(--radius-sm);
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    outline: none;
+    letter-spacing: 0.08em;
+  }
+  .lock-input:focus { border-color: var(--gold); }
+  .lock-btn {
+    padding: 11px;
+    background: var(--gold);
+    border: none; border-radius: var(--radius-sm);
+    color: var(--navy);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s;
+    letter-spacing: 0.01em;
+  }
+  .lock-btn:hover { opacity: 0.88; }
+  .lock-error { color: #F09595; font-size: 12px; display: none; }
+
+  /* ── APP SHELL ── */
+  #app { display: none; flex-direction: column; min-height: 100vh; }
+
+  header {
+    background: var(--navy);
+    padding: 0 32px;
+    height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 10;
+    border-bottom: 2px solid var(--gold);
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header-bar { width: 3px; height: 28px; background: var(--gold); border-radius: 2px; }
+  .header-title { color: #fff; font-size: 15px; font-weight: 600; letter-spacing: 0.01em; }
+  .header-subtitle { color: rgba(255,255,255,0.45); font-size: 12px; margin-top: 1px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .last-updated { color: rgba(255,255,255,0.4); font-size: 11px; font-family: 'Courier New', monospace; }
+  .refresh-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px;
+    background: rgba(201,168,76,0.15);
+    border: 1px solid rgba(201,168,76,0.4);
+    border-radius: var(--radius-sm);
+    color: var(--gold-light);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .refresh-btn:hover { background: rgba(201,168,76,0.25); }
+  .refresh-btn svg { width: 13px; height: 13px; }
+
+  main { padding: 28px 32px; flex: 1; max-width: 1200px; width: 100%; margin: 0 auto; }
+
+  /* ── METRICS ── */
+  .metrics { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; margin-bottom: 28px; }
+  .metric {
+    background: #fff;
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    position: relative; overflow: hidden;
+  }
+  .metric::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; border-radius: 3px 0 0 3px;
+  }
+  .metric.red::before { background: var(--red); }
+  .metric.amber::before { background: var(--gold); }
+  .metric.navy::before { background: var(--navy); }
+  .metric.green::before { background: var(--green); }
+  .metric-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .metric-value { font-size: 28px; font-weight: 600; line-height: 1; }
+  .metric.red .metric-value { color: var(--red); }
+  .metric.amber .metric-value { color: var(--amber); }
+  .metric.green .metric-value { color: var(--green); }
+  .metric.navy .metric-value { color: var(--navy); }
+
+  /* ── CONTROLS ── */
+  .controls {
+    display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;
+  }
+  .search-wrap { position: relative; flex: 1; min-width: 200px; }
+  .search-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--text-muted); pointer-events: none; }
+  .search-input {
+    width: 100%; padding: 9px 12px 9px 32px;
+    background: #fff; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px; color: var(--text); outline: none;
+  }
+  .search-input:focus { border-color: var(--navy-mid); }
+  .ctrl-select {
+    padding: 9px 12px; background: #fff; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px; color: var(--text); outline: none; cursor: pointer;
+  }
+  .ctrl-select:focus { border-color: var(--navy-mid); }
+
+  /* ── TABLE ── */
+  .table-wrap { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .proj-group { border-bottom: 1px solid var(--border); }
+  .proj-group:last-child { border-bottom: none; }
+  .proj-head {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px; align-items: center;
+    padding: 12px 20px;
+    background: #F4F3EF;
+    border-bottom: 1px solid var(--border);
+  }
+  .proj-name {
+    font-size: 12px; font-weight: 600; color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .proj-name svg { width: 13px; height: 13px; opacity: 0.6; }
+  .proj-badges { display: flex; gap: 6px; }
+  .badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500;
+  }
+  .badge-red { background: var(--red-bg); color: var(--red); border: 1px solid rgba(192,57,43,0.2); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(183,119,13,0.2); }
+
+  .col-heads {
+    display: grid;
+    grid-template-columns: 28px 1fr 160px 110px 95px;
+    gap: 10px; padding: 8px 20px;
+    background: #FAFAF8;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .col-days { text-align: right; }
+
+  .ms-row {
+    display: grid;
+    grid-template-columns: 28px 1fr 160px 110px 95px;
+    gap: 10px; align-items: center;
+    padding: 11px 20px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .ms-row:last-child { border-bottom: none; }
+  .ms-row:hover { background: #FAFAF8; }
+
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; margin: auto; }
+  .dot-red { background: var(--red); }
+  .dot-amber { background: var(--gold); }
+
+  .ms-name-cell { min-width: 0; }
+  .ms-name {
+    font-size: 13px; font-weight: 500; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    display: block; text-decoration: none;
+  }
+  .ms-name:hover { color: var(--navy-mid); text-decoration: underline; }
+  a.ms-name { color: var(--navy); }
+
+  .ms-assignee { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ms-due { font-size: 12px; color: var(--text-muted); font-family: 'Courier New', monospace; }
+  .ms-days { font-size: 12px; font-weight: 600; text-align: right; font-family: 'Courier New', monospace; }
+  .ms-days.overdue { color: var(--red); }
+  .ms-days.soon { color: var(--amber); }
+
+  /* ── STATES ── */
+  .state-box {
+    padding: 48px 20px; text-align: center;
+    color: var(--text-muted); font-size: 13px;
+  }
+  .state-box svg { display: block; margin: 0 auto 12px; opacity: 0.35; }
+  .state-box strong { display: block; color: var(--text); margin-bottom: 4px; font-size: 14px; }
+
+  .spinner {
+    display: inline-block; width: 18px; height: 18px;
+    border: 2px solid var(--border); border-top-color: var(--gold);
+    border-radius: 50%; animation: spin 0.75s linear infinite;
+    margin: 0 auto 14px; display: block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-box {
+    background: var(--amber-bg); border: 1px solid rgba(183,119,13,0.3);
+    border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px;
+    font-size: 13px; color: #7A5200; line-height: 1.6; display: none;
+  }
+  .error-box strong { color: #5A3800; }
+  .error-box code { font-family: 'DM Mono', monospace; font-size: 12px; background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 3px; }
+
+  @media (max-width: 700px) {
+    header { padding: 0 16px; }
+    main { padding: 16px; }
+    .metrics { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .ms-row, .col-heads { grid-template-columns: 20px 1fr 90px; }
+    .ms-row > *:nth-child(3), .ms-row > *:nth-child(4),
+    .col-heads > *:nth-child(3), .col-heads > *:nth-child(4) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PASSWORD SCREEN -->
+<div id="lock-screen">
+  <div class="lock-logo">
+    <div class="lock-logo-bar"></div>
+    <div>
+      <div class="lock-logo-text">Oldfield Advisory</div>
+    </div>
+  </div>
+  <div class="lock-card">
+    <div class="lock-label">Enter password to continue</div>
+    <input class="lock-input" id="pw-input" type="password" placeholder="••••••••" autocomplete="off" />
+    <div class="lock-error" id="pw-error">Incorrect password. Please try again.</div>
+    <button class="lock-btn" onclick="checkPassword()">Access dashboard →</button>
+  </div>
+</div>
+
+<!-- DIAGNOSTICS PANEL — visible even before login -->
+<div id="diag-box" style="display:none; position:fixed; bottom:16px; right:16px; max-width:480px; z-index:200; background:#0F2044; color:#fff; border-radius:10px; padding:16px 20px; font-size:12px; font-family:'Courier New',monospace; line-height:1.8; box-shadow:0 4px 24px rgba(0,0,0,0.3);">
+  <div style="font-weight:600; margin-bottom:8px; font-family:sans-serif; font-size:13px;">🔍 Diagnostics</div>
+  <div id="diag-content"></div>
+  <button onclick="document.getElementById('diag-box').style.display='none'" style="margin-top:10px; padding:4px 12px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:4px; color:#fff; cursor:pointer; font-size:11px;">Hide</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <header>
+    <div class="header-left">
+      <div class="header-bar"></div>
+      <div>
+        <div class="header-title">Milestone Health Dashboard</div>
+        <div class="header-subtitle">Oldfield Advisory — Project tracking</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="last-updated" id="last-updated"></span>
+      <button class="refresh-btn" onclick="loadMilestones()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+        Refresh
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <div class="error-box" id="error-box"></div>
+
+    <div class="metrics">
+      <div class="metric red">
+        <div class="metric-label">Overdue</div>
+        <div class="metric-value" id="m-overdue">—</div>
+      </div>
+      <div class="metric amber">
+        <div class="metric-label">At risk (30 days)</div>
+        <div class="metric-value" id="m-atrisk">—</div>
+      </div>
+      <div class="metric navy">
+        <div class="metric-label">Projects affected</div>
+        <div class="metric-value" id="m-projects">—</div>
+      </div>
+      <div class="metric green">
+        <div class="metric-label">On track</div>
+        <div class="metric-value" id="m-ok">—</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" id="search" type="text" placeholder="Search milestones or projects…" oninput="render()" />
+      </div>
+      <select class="ctrl-select" id="filter-status" onchange="render()">
+        <option value="issues">Overdue &amp; at risk</option>
+        <option value="overdue">Overdue only</option>
+        <option value="atrisk">At risk only</option>
+        <option value="all">All milestones</option>
+      </select>
+      <select class="ctrl-select" id="filter-assignee" onchange="render()">
+        <option value="all">All assignees</option>
+      </select>
+      <select class="ctrl-select" id="sort-by" onchange="render()">
+        <option value="urgency">Most urgent first</option>
+        <option value="due">Due date</option>
+        <option value="project">Project A&#8211;Z</option>
+        <option value="assignee">Assignee A&#8211;Z</option>
+      </select>
+    </div>
+
+    <div class="table-wrap" id="table-wrap">
+      <div class="state-box"><div class="spinner"></div>Connecting to Asana…</div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ── CONFIG (also in :root above — edit both) ──
+const DASHBOARD_PASSWORD = "oldfield2026"; // keep in sync with CSS var
+const ASANA_TOKEN = "2/1212395112981781/1214634760034440:0e89b0a4be5bde3460ccf61916c8c786";  // paste your Asana Personal Access Token here
+
+// ── STARTUP CHECK ──
+window.addEventListener('DOMContentLoaded', () => {
+  diag('✅ Page loaded — JS running');
+  diag('Browser: ' + navigator.userAgent.substring(0, 60));
+  diag('Password configured: ' + (DASHBOARD_PASSWORD ? '✅' : '❌'));
+});
+
+// ── PASSWORD ──
+document.getElementById('pw-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkPassword();
+});
+
+function checkPassword() {
+  const val = document.getElementById('pw-input').value;
+  if (val === DASHBOARD_PASSWORD) {
+    document.getElementById('lock-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    loadMilestones();
+  } else {
+    document.getElementById('pw-error').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+// ── DIAGNOSTICS ──
+function diag(msg) {
+  const box = document.getElementById('diag-box');
+  const content = document.getElementById('diag-content');
+  box.style.display = 'block';
+  content.innerHTML += msg + '<br>';
+}
+
+// ── DATA ──
+let allMilestones = [];
+
+function showError(msg) {
+  const el = document.getElementById('error-box');
+  el.innerHTML = msg;
+  el.style.display = 'block';
+}
+function clearError() {
+  document.getElementById('error-box').style.display = 'none';
+}
+
+async function asanaGet(path) {
+  const res = await fetch(`https://app.asana.com/api/1.0${path}`, {
+    headers: { Authorization: `Bearer ${ASANA_TOKEN}`, Accept: 'application/json' }
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.errors?.[0]?.message || `Asana API error ${res.status}`);
+  }
+  return res.json();
+}
+
+async function loadMilestones() {
+  clearError();
+  document.getElementById('table-wrap').innerHTML = '<div class="state-box"><div class="spinner"></div>Fetching milestones…</div>';
+  allMilestones = [];
+
+  diag('▶ loadMilestones() started');
+  diag('Token set: ' + (ASANA_TOKEN !== '2/1212395112981781/1214634760034440:0e89b0a4be5bde3460ccf61916c8c786' ? '✅ yes' : '❌ NO — still placeholder'));
+  diag('Attempting: GET /users/me');
+
+  try {
+    const me = await asanaGet('/users/me?opt_fields=workspaces');
+    diag('✅ /users/me OK — user: ' + (me.data?.name || 'unknown'));
+    const wsGid = me.data.workspaces?.[0]?.gid;
+    if (!wsGid) throw new Error('No Asana workspace found for this token.');
+    diag('✅ Workspace GID: ' + wsGid);
+
+    // 2. Search for incomplete milestones across all projects
+    const params = new URLSearchParams({
+      'resource_subtype': 'milestone',
+      'completed': 'false',
+      'opt_fields': 'name,due_on,assignee.name,memberships.project.name,memberships.project.gid,permalink_url',
+      'limit': '100',
+      'sort_by': 'due_date',
+      'sort_ascending': 'true'
+    });
+
+    const results = await asanaGet(`/workspaces/${wsGid}/tasks/search?${params}`);
+    diag('✅ Milestones fetched: ' + (results.data?.length || 0) + ' found');
+    allMilestones = (results.data || []).map(t => ({
+      name: t.name,
+      due_on: t.due_on || null,
+      project: t.memberships?.[0]?.project?.name || 'No project',
+      project_gid: t.memberships?.[0]?.project?.gid || null,
+      assignee: t.assignee?.name || null,
+      permalink: t.permalink_url || null
+    }));
+
+    populateAssigneeDropdown();
+
+    document.getElementById('last-updated').textContent =
+      'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+    render();
+  } catch (err) {
+    diag('❌ Error: ' + err.message);
+    document.getElementById('table-wrap').innerHTML = '';
+    if (ASANA_TOKEN === '2/1212395112981781/1214634760034440:0e89b0a4be5bde3460ccf61916c8c786') {
+      showError('<strong>Setup required:</strong> Open this file in a text editor and replace <code>2/1212395112981781/1214634760034440:0e89b0a4be5bde3460ccf61916c8c786</code> with your Asana Personal Access Token. You can generate one at <a href="https://app.asana.com/0/my-apps" target="_blank" style="color:inherit">app.asana.com/0/my-apps</a>.');
+    } else {
+      showError(`<strong>Could not load milestones.</strong> ${err.message}. Check your Asana token is correct and has access to your workspace.`);
+    }
+    updateMetrics([], []);
+  }
+}
+
+function classify(due_on) {
+  if (!due_on) return { status: 'no-date', days: null };
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = new Date(due_on);
+  const diff = Math.round((due - today) / 86400000);
+  if (diff < 0) return { status: 'overdue', days: diff };
+  if (diff <= 30) return { status: 'atrisk', days: diff };
+  return { status: 'ok', days: diff };
+}
+
+function updateMetrics(classified, display) {
+  document.getElementById('m-overdue').textContent = classified.filter(m => m.status === 'overdue').length;
+  document.getElementById('m-atrisk').textContent = classified.filter(m => m.status === 'atrisk').length;
+  document.getElementById('m-projects').textContent = new Set(
+    classified.filter(m => m.status === 'overdue' || m.status === 'atrisk').map(m => m.project)
+  ).size;
+  document.getElementById('m-ok').textContent = classified.filter(m => m.status === 'ok').length;
+}
+
+function populateAssigneeDropdown() {
+  const select = document.getElementById('filter-assignee');
+  const current = select.value;
+  const names = [...new Set(allMilestones.map(m => m.assignee).filter(Boolean))].sort();
+  select.innerHTML = '<option value="all">All assignees</option>';
+  names.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    if (name === current) opt.selected = true;
+    select.appendChild(opt);
+  });
+}
+
+function render() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const filterStatus = document.getElementById('filter-status').value;
+  const filterAssignee = document.getElementById('filter-assignee').value;
+  const sortBy = document.getElementById('sort-by').value;
+
+  const classified = allMilestones.map(m => ({ ...m, ...classify(m.due_on) }));
+  updateMetrics(classified, []);
+
+  let filtered = classified.filter(m => {
+    const matchSearch = !search ||
+      m.name.toLowerCase().includes(search) ||
+      m.project.toLowerCase().includes(search) ||
+      (m.assignee || '').toLowerCase().includes(search);
+    const matchStatus =
+      filterStatus === 'all' ? true :
+      filterStatus === 'issues' ? (m.status === 'overdue' || m.status === 'atrisk') :
+      filterStatus === 'overdue' ? m.status === 'overdue' :
+      filterStatus === 'atrisk' ? m.status === 'atrisk' : true;
+    const matchAssignee = filterAssignee === 'all' || m.assignee === filterAssignee;
+    return matchSearch && matchStatus && matchAssignee;
+  });
+
+  if (sortBy === 'urgency') {
+    const rank = { overdue: 0, atrisk: 1, ok: 2, 'no-date': 3 };
+    filtered.sort((a,b) => rank[a.status] !== rank[b.status]
+      ? rank[a.status] - rank[b.status]
+      : (a.days ?? 999) - (b.days ?? 999));
+  } else if (sortBy === 'due') {
+    filtered.sort((a,b) => !a.due_on ? 1 : !b.due_on ? -1 : new Date(a.due_on) - new Date(b.due_on));
+  } else if (sortBy === 'assignee') {
+    filtered.sort((a,b) => (a.assignee || 'ZZZ').localeCompare(b.assignee || 'ZZZ'));
+  } else {
+    filtered.sort((a,b) => a.project.localeCompare(b.project));
+  }
+
+  const wrap = document.getElementById('table-wrap');
+
+  if (filtered.length === 0 && allMilestones.length > 0) {
+    wrap.innerHTML = `<div class="state-box">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <strong>All clear</strong>No milestones match your current filters.
+    </div>`;
+    return;
+  }
+
+  if (filtered.length === 0) { return; }
+
+  // Group by project
+  const groups = {};
+  filtered.forEach(m => {
+    if (!groups[m.project]) groups[m.project] = [];
+    groups[m.project].push(m);
+  });
+
+  let html = '';
+  for (const [proj, items] of Object.entries(groups)) {
+    const redCount = items.filter(m => m.status === 'overdue').length;
+    const amberCount = items.filter(m => m.status === 'atrisk').length;
+    html += `<div class="proj-group">
+      <div class="proj-head">
+        <div class="proj-name">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          ${esc(proj)}
+        </div>
+        <div class="proj-badges">
+          ${redCount ? `<span class="badge badge-red">${redCount} overdue</span>` : ''}
+          ${amberCount ? `<span class="badge badge-amber">${amberCount} at risk</span>` : ''}
+        </div>
+      </div>
+      <div class="col-heads">
+        <span></span><span>Milestone</span><span>Assignee</span><span>Due date</span><span class="col-days">Days</span>
+      </div>`;
+
+    items.forEach(m => {
+      const dotClass = m.status === 'overdue' ? 'dot-red' : 'dot-amber';
+      const daysClass = m.status === 'overdue' ? 'overdue' : 'soon';
+      const daysLabel = m.days === null ? '&#8212;'
+        : m.days < 0 ? `${Math.abs(m.days)}d late`
+        : m.days === 0 ? 'Today'
+        : `${m.days}d`;
+      const dueLabel = m.due_on
+        ? new Date(m.due_on).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })
+        : '&#8212;';
+      const assigneeHtml = filterAssignee !== 'all'
+        ? `<span class="ms-assignee" style="color:var(--navy); font-weight:500;">${esc(m.assignee || '&#8212;')}</span>`
+        : `<span class="ms-assignee">${esc(m.assignee || '&#8212;')}</span>`;
+      const nameEl = m.permalink
+        ? `<a href="${m.permalink}" target="_blank" class="ms-name" title="${esc(m.name)}">${esc(m.name)}</a>`
+        : `<span class="ms-name" title="${esc(m.name)}">${esc(m.name)}</span>`;
+
+      html += `<div class="ms-row">
+        <div><span class="status-dot ${dotClass}"></span></div>
+        <div class="ms-name-cell">${nameEl}</div>
+        ${assigneeHtml}
+        <div class="ms-due">${dueLabel}</div>
+        <div class="ms-days ${daysClass}">${daysLabel}</div>
+      </div>`;
+    });
+
+    html += '</div>';
+  }
+
+  wrap.innerHTML = html;
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
