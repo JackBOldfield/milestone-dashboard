@@ -446,7 +446,7 @@ function classify(due_on) {
   const due = new Date(due_on);
   const diff = Math.round((due - today) / 86400000);
   if (diff < 0) return { status: 'overdue', days: diff };
-  if (diff <= 30) return { status: 'atrisk', days: diff };
+  if (diff <= 14) return { status: 'atrisk', days: diff };
   return { status: 'ok', days: diff };
 }
 
